@@ -5,9 +5,251 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Guitar Tuner</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --text: #e8e8ec;
+      --text-dim: #5a5a66;
+      --color-in-tune: #3dd68c;
+      --color-close: #e8c547;
+      --color-off: #e85d5d;
+      --color-idle: #4a4a56;
+      --track-bg: #1e1e26;
+      --center-line: #3a3a48;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 1.5rem;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 40rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    #start-screen:not([hidden]) {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    #start-button {
+      font-size: 1.125rem;
+      padding: 0.875rem 2rem;
+      border: none;
+      border-radius: 0.5rem;
+      background: var(--color-in-tune);
+      color: var(--bg);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #start-button:hover {
+      filter: brightness(1.1);
+    }
+
+    #start-button:active {
+      filter: brightness(0.95);
+    }
+
+    #stop-button {
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 0.375rem;
+      background: var(--color-off);
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    #stop-button:hover {
+      filter: brightness(1.1);
+    }
+
+    #stop-button:active {
+      filter: brightness(0.95);
+    }
+
+    .freq-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    #tuner-ui:not([hidden]) {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 1rem;
+    }
+
+    .freq-panel {
+      flex: 1 1 55%;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    #freq-value {
+      font-size: clamp(1.5rem, 5vw, 2rem);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    #freq-value.idle {
+      color: var(--text-dim);
+    }
+
+    .freq-chart-wrap {
+      flex: 1;
+      background: var(--track-bg);
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+    }
+
+    .freq-chart-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0.5rem;
+      height: 100%;
+      min-height: 12rem;
+    }
+
+    .freq-y-labels {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+      padding: 0.1rem 0;
+      flex-shrink: 0;
+      width: 2.25rem;
+      text-align: right;
+    }
+
+    #freq-canvas {
+      display: block;
+      flex: 1;
+      width: 100%;
+      height: 12rem;
+      min-height: 12rem;
+    }
+
+    .note-panel {
+      flex: 1 1 45%;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--track-bg);
+      border-radius: 0.5rem;
+      padding: 1rem;
+    }
+
+    .note-display {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 0.1em;
+      line-height: 1;
+    }
+
+    #note-name {
+      font-size: clamp(4rem, 14vw, 5.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    #note-name.idle {
+      color: var(--text-dim);
+    }
+
+    #note-octave {
+      font-size: clamp(1.75rem, 6vw, 2.5rem);
+      font-weight: 500;
+      color: var(--text-dim);
+      align-self: flex-start;
+      margin-top: 0.35em;
+    }
+
+    @media (max-width: 520px) {
+      #tuner-ui:not([hidden]) {
+        flex-direction: column;
+      }
+
+      .note-panel {
+        min-height: 8rem;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <div id="app">
+    <div id="start-screen">
+      <button type="button" id="start-button">Start Tuner</button>
+    </div>
+
+    <div id="tuner-ui" hidden>
+      <section class="freq-panel" aria-label="Frequency">
+        <div class="freq-header">
+          <div id="freq-value" class="idle">— Hz</div>
+          <button type="button" id="stop-button">Stop</button>
+        </div>
+        <div class="freq-chart-wrap">
+          <div class="freq-chart-row">
+            <div class="freq-y-labels" aria-hidden="true">
+              <span>500</span>
+              <span>275</span>
+              <span>50</span>
+            </div>
+            <canvas id="freq-canvas" aria-label="Frequency over time"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="note-panel" aria-label="Note">
+        <div class="note-display">
+          <span id="note-name" class="idle">—</span>
+          <span id="note-octave"></span>
+        </div>
+      </section>
+    </div>
+  </div>
+
   <script type="module" src="/dist/main.js"></script>
 </body>
 
