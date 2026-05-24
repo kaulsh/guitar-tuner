@@ -19,8 +19,12 @@ function getStartScreenElements() {
   if (!startScreen) {
     startScreen = document.getElementById("start-screen");
     tunerUi = document.getElementById("tuner-ui");
-    startButton = document.getElementById("start-button") as HTMLButtonElement | null;
-    stopButton = document.getElementById("stop-button") as HTMLButtonElement | null;
+    startButton = document.getElementById(
+      "start-button",
+    ) as HTMLButtonElement | null;
+    stopButton = document.getElementById(
+      "stop-button",
+    ) as HTMLButtonElement | null;
 
     if (!startScreen || !tunerUi || !startButton || !stopButton) {
       throw new Error("Start screen UI elements not found in the document");
@@ -66,6 +70,21 @@ export function onStopButtonClick(handler: () => void | Promise<void>): void {
 export function resetFrequencyDisplay(): void {
   history.length = 0;
   updateFrequency(null);
+  resetNoteDisplay();
+}
+
+export function resetNoteDisplay(): void {
+  const { noteNameEl, noteOctaveEl } = getElements();
+  noteNameEl.textContent = "\u2014";
+  noteNameEl.classList.add("idle");
+  noteOctaveEl.textContent = "";
+}
+
+export function updateNote(note: string, octave: number): void {
+  const { noteNameEl, noteOctaveEl } = getElements();
+  noteNameEl.textContent = note;
+  noteNameEl.classList.remove("idle");
+  noteOctaveEl.textContent = String(octave);
 }
 
 function getElements() {
@@ -92,7 +111,10 @@ function getElements() {
   };
 }
 
-function resizeCanvas(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
+function resizeCanvas(
+  canvas: HTMLCanvasElement,
+  context: CanvasRenderingContext2D,
+) {
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   const w = Math.max(1, Math.floor(rect.width * dpr));
@@ -168,14 +190,6 @@ function drawChart() {
   }
 }
 
-/** Note display placeholder — wired to note detection later. */
-function showNoteIdle(): void {
-  const { noteNameEl, noteOctaveEl } = getElements();
-  noteNameEl.textContent = "\u2014";
-  noteNameEl.classList.add("idle");
-  noteOctaveEl.textContent = "";
-}
-
 export function updateFrequency(freq: number | null): void {
   const { freqValueEl } = getElements();
 
@@ -187,12 +201,9 @@ export function updateFrequency(freq: number | null): void {
   if (freq === null) {
     freqValueEl.textContent = "\u2014 Hz";
     freqValueEl.classList.add("idle");
-    showNoteIdle();
   } else {
     freqValueEl.textContent = `${freq.toFixed(1)} Hz`;
     freqValueEl.classList.remove("idle");
-    // Note name/octave will be driven by getNoteFromFrequency() later.
-    showNoteIdle();
   }
 
   drawChart();

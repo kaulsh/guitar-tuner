@@ -122,7 +122,7 @@ export function detectFrequency(analyser: AnalyserNode): number | null {
   if (rms < 0.01) return null;
 
   const minOffset = Math.max(2, Math.floor(sampleRate / 500));
-  const maxOffset = Math.min(maxSamples - 1, Math.floor(sampleRate / 50));
+  const maxOffset = Math.min(maxSamples - 1, Math.floor(sampleRate / 40));
 
   const correlations = new Float32Array(maxOffset + 1);
 
@@ -133,7 +133,7 @@ export function detectFrequency(analyser: AnalyserNode): number | null {
 
   for (let offset = minOffset; offset <= maxOffset; offset++) {
     let sum = 0;
-    for (let i = 0; i < maxSamples; i++) {
+    for (let i = 0; i < maxSamples - offset; i++) {
       sum += Math.abs(buffer[i] - buffer[i + offset]);
     }
     const correlation = 1 - sum / maxSamples;

@@ -21,7 +21,7 @@ export async function startAudio(): Promise<AnalyserNode> {
 
   const analyser = ctx.createAnalyser();
 
-  analyser.fftSize = 2048;
+  analyser.fftSize = 4096;
 
   source.connect(analyser);
 

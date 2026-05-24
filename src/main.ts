@@ -1,15 +1,18 @@
 import { startAudio, stopAudio } from "./audio.js";
 import { detectFrequency } from "./frequency.js";
 import { logger } from "./logger.js";
+import { NoteResult, PitchStabiliser } from "./pitch-stabiliser.js";
 import {
   hideStartScreen,
   hideTunerUi,
   onStartButtonClick,
   onStopButtonClick,
   resetFrequencyDisplay,
+  resetNoteDisplay,
   showStartScreen,
   showTunerUi,
   updateFrequency,
+  updateNote,
 } from "./ui.js";
 
 (async function main() {
@@ -18,15 +21,25 @@ import {
   try {
     let analyser: AnalyserNode | null = null;
     let running = false;
+    const stabiliser = new PitchStabiliser();
+
+    function updateDisplay(stable: NoteResult | null): void {
+      if (stable === null) {
+        resetNoteDisplay();
+      } else {
+        updateNote(stable.note, stable.octave);
+      }
+    }
 
     function tick(): void {
       if (!running || !analyser) {
         return;
       }
 
-      const frequency = detectFrequency(analyser);
-
-      updateFrequency(frequency);
+      const raw = detectFrequency(analyser);
+      updateFrequency(raw);
+      const stable = stabiliser.update(raw);
+      updateDisplay(stable);
 
       requestAnimationFrame(tick);
     }
@@ -40,6 +53,8 @@ import {
         hideStartScreen();
         showTunerUi();
         updateFrequency(null);
+        stabiliser.reset();
+        resetNoteDisplay();
 
         running = true;
 
@@ -57,6 +72,7 @@ import {
 
       running = false;
       analyser = null;
+      stabiliser.reset();
 
       stopAudio();
       hideTunerUi();
