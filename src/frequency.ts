@@ -119,50 +119,53 @@ export function detectFrequency(analyser: AnalyserNode): number | null {
     rms += buffer[i] * buffer[i];
   }
   rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.01) return null;
+  if (rms < 0.005) return null;
 
   const minOffset = Math.max(2, Math.floor(sampleRate / 500));
   const maxOffset = Math.min(maxSamples - 1, Math.floor(sampleRate / 40));
 
-  const correlations = new Float32Array(maxOffset + 1);
+  const d = new Float32Array(maxOffset + 1);
+  for (let lag = 1; lag <= maxOffset; lag++) {
+    let sum = 0;
+    for (let i = 0; i < maxSamples - lag; i++) {
+      sum += Math.abs(buffer[i] - buffer[i + lag]);
+    }
+    d[lag] = sum;
+  }
+
+  const cmndf = new Float32Array(maxOffset + 1);
+  cmndf[0] = 1;
+  let runningSum = 0;
+  for (let lag = 1; lag <= maxOffset; lag++) {
+    runningSum += d[lag];
+    cmndf[lag] = d[lag] / (runningSum / lag);
+  }
 
   let bestOffset = -1;
-  let bestCorrelation = 0;
-  let lastCorrelation = 1;
-  let foundGoodCorrelation = false;
-
-  for (let offset = minOffset; offset <= maxOffset; offset++) {
-    let sum = 0;
-    for (let i = 0; i < maxSamples - offset; i++) {
-      sum += Math.abs(buffer[i] - buffer[i + offset]);
+  for (let lag = minOffset; lag <= maxOffset; lag++) {
+    if (cmndf[lag] < 0.20) {
+      bestOffset = lag;
+      break;
     }
-    const correlation = 1 - sum / maxSamples;
-    correlations[offset] = correlation;
-
-    if (correlation > 0.9 && correlation > lastCorrelation) {
-      foundGoodCorrelation = true;
-      if (correlation > bestCorrelation) {
-        bestCorrelation = correlation;
-        bestOffset = offset;
-      }
-    } else if (foundGoodCorrelation) {
-      const y1 = correlations[bestOffset - 1];
-      const y2 = correlations[bestOffset];
-      const y3 = correlations[bestOffset + 1];
-      const denom = 2 * (2 * y2 - y1 - y3);
-      const shift = denom !== 0 ? (y1 - y3) / denom : 0;
-      const tunedOffset = bestOffset + (Number.isFinite(shift) ? shift : 0);
-      const period = tunedOffset / sampleRate;
-      return 1 / period;
-    }
-
-    lastCorrelation = correlation;
   }
 
-  if (bestOffset !== -1 && bestCorrelation > 0.01) {
-    const period = bestOffset / sampleRate;
-    return 1 / period;
+  if (bestOffset === -1) {
+    return null;
   }
 
-  return null;
+  const halfLag = Math.round(bestOffset / 2);
+  if (
+    halfLag >= minOffset &&
+    cmndf[halfLag] <= cmndf[bestOffset] * 1.2
+  ) {
+    bestOffset = halfLag;
+  }
+
+  const y1 = cmndf[bestOffset - 1];
+  const y2 = cmndf[bestOffset];
+  const y3 = cmndf[bestOffset + 1];
+  const denom = 2 * (2 * y2 - y1 - y3);
+  const shift = denom !== 0 ? (y1 - y3) / denom : 0;
+  const tunedOffset = bestOffset + (Number.isFinite(shift) ? shift : 0);
+  return sampleRate / tunedOffset;
 }

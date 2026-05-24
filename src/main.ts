@@ -37,8 +37,11 @@ import {
       }
 
       const raw = detectFrequency(analyser);
+
       updateFrequency(raw);
+
       const stable = stabiliser.update(raw);
+
       updateDisplay(stable);
 
       requestAnimationFrame(tick);

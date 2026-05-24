@@ -3,8 +3,8 @@ import { getNoteFromFrequency } from "./notes.js";
 export type NoteResult = ReturnType<typeof getNoteFromFrequency>;
 
 const HISTORY_SIZE = 10;
-const SMOOTHING_ALPHA = 0.15;
-const HYSTERESIS_FRAMES = 8;
+const INITIAL_HYSTERESIS_FRAMES = 4;
+const SWITCH_HYSTERESIS_FRAMES = 8;
 const DECAY_FRAMES = 20;
 
 export class PitchStabiliser {
@@ -41,8 +41,13 @@ export class PitchStabiliser {
     if (this.smoothedFreq === null) {
       this.smoothedFreq = rawFreq;
     } else {
-      this.smoothedFreq =
-        (1 - SMOOTHING_ALPHA) * this.smoothedFreq + SMOOTHING_ALPHA * rawFreq;
+      const ratio = rawFreq / this.smoothedFreq;
+      if (ratio < 0.5 || ratio > 2.0) {
+        return this.confirmedNote;
+      }
+      const diff = Math.abs(rawFreq - this.smoothedFreq) / this.smoothedFreq;
+      const alpha = diff > 0.1 ? 0.5 : 0.85;
+      this.smoothedFreq = alpha * this.smoothedFreq + (1 - alpha) * rawFreq;
     }
 
     const noteResult = getNoteFromFrequency(this.smoothedFreq);
@@ -62,8 +67,13 @@ export class PitchStabiliser {
         this.consecutiveMajorityCount = 1;
       }
 
+      const requiredFrames =
+        this.confirmedNote === null
+          ? INITIAL_HYSTERESIS_FRAMES
+          : SWITCH_HYSTERESIS_FRAMES;
+
       if (
-        this.consecutiveMajorityCount >= HYSTERESIS_FRAMES &&
+        this.consecutiveMajorityCount >= requiredFrames &&
         (this.confirmedNote === null || this.confirmedNote.note !== candidate)
       ) {
         this.confirmedNote =
