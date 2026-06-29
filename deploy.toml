@@ -1,0 +1,7 @@
+name = "guitar-tuner"
+type = "static"
+hosts = ["tuner.shashank.gg"]
+
+[build]
+command = "pnpm build"
+build_location = "./dist"
