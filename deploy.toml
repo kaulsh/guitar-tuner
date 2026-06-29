@@ -3,5 +3,5 @@ type = "static"
 hosts = ["tuner.shashank.gg"]
 
 [build]
-command = "pnpm build"
+command = "pnpm i && pnpm build"
 build_location = "./dist"
