@@ -3,12 +3,14 @@ import { detectFrequency } from "./frequency.js";
 import { logger } from "./logger.js";
 import { NoteResult, PitchStabiliser } from "./pitch-stabiliser.js";
 import {
+  clearStartError,
   hideStartScreen,
   hideTunerUi,
   onStartButtonClick,
   onStopButtonClick,
   resetFrequencyDisplay,
   resetNoteDisplay,
+  showStartError,
   showStartScreen,
   showTunerUi,
   updateFrequency,
@@ -17,6 +19,11 @@ import {
 
 (async function main() {
   logger.info("Guitar tuner initializing");
+  logger.debug("Page loaded", {
+    secureContext: window.isSecureContext,
+    protocol: location.protocol,
+    href: location.href,
+  });
 
   try {
     let analyser: AnalyserNode | null = null;
@@ -49,6 +56,7 @@ import {
 
     onStartButtonClick(async () => {
       logger.info("Start button clicked");
+      clearStartError();
 
       try {
         analyser = await startAudio();
@@ -65,7 +73,8 @@ import {
 
         requestAnimationFrame(tick);
       } catch (err) {
-        logger.error(err);
+        logger.error(err, "Failed to start tuner");
+        showStartError(logger.formatError(err));
         running = false;
       }
     });
@@ -85,6 +94,7 @@ import {
       logger.info("Tuner stopped");
     });
   } catch (err) {
-    logger.error(err);
+    logger.error(err, "Initialization failed");
+    showStartError(logger.formatError(err));
   }
 })();

@@ -78,6 +78,15 @@
       filter: brightness(0.95);
     }
 
+    #start-error {
+      max-width: 24rem;
+      font-size: 0.875rem;
+      line-height: 1.4;
+      color: var(--color-off);
+      text-align: center;
+      word-break: break-word;
+    }
+
     #stop-button {
       font-size: 0.875rem;
       padding: 0.5rem 1rem;
@@ -221,6 +230,7 @@
   <div id="app">
     <div id="start-screen">
       <button type="button" id="start-button">Start Tuner</button>
+      <div id="start-error" hidden role="alert"></div>
     </div>
 
     <div id="tuner-ui" hidden>

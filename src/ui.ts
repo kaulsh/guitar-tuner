@@ -14,6 +14,7 @@ let startScreen: HTMLElement | null = null;
 let tunerUi: HTMLElement | null = null;
 let startButton: HTMLButtonElement | null = null;
 let stopButton: HTMLButtonElement | null = null;
+let startErrorEl: HTMLElement | null = null;
 
 function getStartScreenElements() {
   if (!startScreen) {
@@ -25,6 +26,7 @@ function getStartScreenElements() {
     stopButton = document.getElementById(
       "stop-button",
     ) as HTMLButtonElement | null;
+    startErrorEl = document.getElementById("start-error");
 
     if (!startScreen || !tunerUi || !startButton || !stopButton) {
       throw new Error("Start screen UI elements not found in the document");
@@ -36,7 +38,26 @@ function getStartScreenElements() {
     tunerUi: tunerUi!,
     startButton: startButton!,
     stopButton: stopButton!,
+    startErrorEl,
   };
+}
+
+export function clearStartError(): void {
+  const { startErrorEl } = getStartScreenElements();
+  if (!startErrorEl) {
+    return;
+  }
+  startErrorEl.textContent = "";
+  startErrorEl.hidden = true;
+}
+
+export function showStartError(message: string): void {
+  const { startErrorEl } = getStartScreenElements();
+  if (!startErrorEl) {
+    return;
+  }
+  startErrorEl.textContent = message;
+  startErrorEl.hidden = false;
 }
 
 export function hideStartScreen(): void {

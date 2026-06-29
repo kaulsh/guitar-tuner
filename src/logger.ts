@@ -1,16 +1,41 @@
-function info(message: string) {
-  console.log(`[${new Date().toISOString()}] ${message}`);
+function timestamp(): string {
+  return new Date().toISOString();
 }
 
-function error(error: unknown) {
+function prefix(level: string): string {
+  return `[${timestamp()}] [${level}]`;
+}
+
+export function formatError(error: unknown): string {
+  if (error instanceof DOMException) {
+    return `${error.name}: ${error.message}`;
+  }
   if (error instanceof Error) {
-    console.error(`[${new Date().toISOString()}] ${error.name}: ${error.message}`);
+    return `${error.name}: ${error.message}`;
+  }
+  return String(error);
+}
+
+function info(message: string, ...details: unknown[]) {
+  console.log(prefix("INFO"), message, ...details);
+}
+
+function debug(message: string, ...details: unknown[]) {
+  console.log(prefix("DEBUG"), message, ...details);
+}
+
+function error(error: unknown, context?: string) {
+  const message = formatError(error);
+  if (context) {
+    console.error(prefix("ERROR"), context, message, error);
   } else {
-    console.error(`[${new Date().toISOString()}] ${error}`);
+    console.error(prefix("ERROR"), message, error);
   }
 }
 
 export const logger = {
   info,
+  debug,
   error,
+  formatError,
 };
